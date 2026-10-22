@@ -1,56 +1,89 @@
-# Welcome to your Expo app 👋
+# RastreadorApp
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicación móvil para guardar perfiles y consultar el estado de encomiendas de distintos couriers. Los perfiles y las encomiendas se sincronizan con Supabase.
 
-## Get started
+## Requisitos
 
-1. Install dependencies
+- Node.js en una versión LTS y npm.
+- Git.
+- Un proyecto de Supabase para habilitar registro, inicio de sesión y sincronización.
+- Para probar en un teléfono: Expo Go instalado. También se puede usar un emulador de Android; para el simulador de iOS se requiere macOS.
 
-   ```bash
-   npm install
+## Configurar Supabase
+
+1. Crea un proyecto en [Supabase](https://supabase.com/).
+2. En el panel del proyecto, abre **SQL Editor**, pega el contenido de `supabase/migrations/20261020160000_profiles_and_packages.sql` y ejecútalo.
+3. En **Project Settings → API**, copia la URL del proyecto y su clave publicable (anon).
+4. En la carpeta del proyecto, crea `.env` a partir de la plantilla:
+
+   **Windows PowerShell:**
+
+   ```powershell
+   Copy-Item .env.example .env
    ```
 
-2. Start the app
+   **macOS/Linux:**
 
    ```bash
-   npx expo start
+   cp .env.example .env
    ```
 
-In the output, you'll find options to open the app in a
+5. Abre `.env` y completa los valores:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+   ```dotenv
+   EXPO_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
+   EXPO_PUBLIC_SUPABASE_ANON_KEY=tu-clave-publicable
+   ```
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+   No agregues espacios alrededor de `=`. Nunca uses una clave `service_role` ni subas el archivo `.env` a GitHub. La clave publicable/anon está diseñada para estar en la app; las políticas RLS de la migración limitan el acceso de cada usuario a sus propios datos.
 
-## Get a fresh project
+6. Si el proyecto de Supabase requiere confirmar el correo, confirma la cuenta desde el email antes de iniciar sesión en la app.
 
-When you're ready, run:
+## Instalar y ejecutar
+
+Si se clona el proyecto desde GitHub, reemplaza `USUARIO` y `REPOSITORIO` por los valores de la URL:
 
 ```bash
-npm run reset-project
+git clone https://github.com/USUARIO/REPOSITORIO.git
+cd REPOSITORIO
+npm ci
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Configura `.env` siguiendo los pasos anteriores y arranca Expo:
 
-### Other setup steps
+```bash
+npm start
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Escanea el código QR con Expo Go en el teléfono (ambos dispositivos deben poder comunicarse por la red local). En la terminal de Expo también puedes:
 
-## Learn more
+- Presionar `a` para abrir en un emulador de Android.
+- Presionar `w` para ejecutar la versión web.
 
-To learn more about developing your project with Expo, look at the following resources:
+Comandos disponibles:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npm run android
+npm run ios
+npm run web
+npm run lint
+```
 
-## Join the community
+Los perfiles locales anteriores se pueden importar desde **Perfiles** después de iniciar sesión. La protección PIN local no se transfiere; los datos sincronizados quedan asociados a la cuenta de Supabase.
 
-Join our community of developers creating universal apps.
+## Estructura
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```text
+src/
+  app/                 # Rutas de Expo Router
+    (tabs)/            # Inicio, nueva encomienda y perfil
+    auth.tsx           # Inicio de sesión y registro
+    guest.tsx          # Seguimiento como invitado
+  components/          # Componentes reutilizables
+  contexts/            # Sesión y perfil activo
+  lib/                 # Cliente Supabase y almacenamiento
+  screens/             # Implementación de las pantallas
+  services/couriers/   # Integraciones con couriers
+  types/               # Tipos de dominio
+supabase/migrations/   # Esquema de base de datos y políticas RLS
+```
