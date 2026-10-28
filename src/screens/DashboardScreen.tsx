@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { WebView, type WebViewMessageEvent } from 'react-native-webview';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useActiveProfile } from '@/contexts/ActiveProfileContext';
 import { colors, globalStyles } from '@/styles/globalStyles';
 import { courierServices } from '@/services/couriers';
@@ -15,19 +14,78 @@ const getStatusTone = (status = '') => isDelivered(status)
 
 export function DashboardScreen() {
   const router = useRouter();
-  const { profileId } = useLocalSearchParams<{ profileId?: string }>();
+  const { profileId, refreshPackageId } = useLocalSearchParams<{ profileId?: string; refreshPackageId?: string }>();
   const { activeProfileId } = useActiveProfile();
   const selectedProfileId = profileId ?? activeProfileId ?? undefined;
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [refreshQueue, setRefreshQueue] = useState<SavedPackage[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const lastAutoRefreshPackageId = useRef<string | null>(null);
+  const refreshingRef = useRef(false);
 
-  useEffect(() => {
-    profileStorage.list()
-      .then((profiles) => setProfile(profiles.find((item) => item.id === selectedProfileId) ?? null))
-      .catch(() => setError('No se pudo cargar el perfil.'));
-  }, [selectedProfileId]);
+  const fetchProfile = useCallback(
+    () => selectedProfileId ? profileStorage.get(selectedProfileId) : Promise.resolve(null),
+    [selectedProfileId],
+  );
+
+  const refreshPackages = useCallback(async (loadedProfile: Profile, packages: SavedPackage[]) => {
+    if (refreshingRef.current) return;
+    refreshingRef.current = true;
+    setRefreshing(true);
+    setError(null);
+    let updatedProfile = loadedProfile;
+    const failures: string[] = [];
+
+    for (const item of packages) {
+      const lookup = courierServices[item.courier].lookup;
+      if (!lookup) {
+        failures.push(`${item.alias}: consulta directa no disponible para este courier.`);
+        continue;
+      }
+      try {
+        const result = await lookup(item.trackingNumber);
+        await profileStorage.saveResult(updatedProfile.id, item.id, result);
+        updatedProfile = {
+          ...updatedProfile,
+          packages: updatedProfile.packages.map((candidate) => candidate.id === item.id ? { ...candidate, result } : candidate),
+        };
+        setProfile(updatedProfile);
+      } catch (cause) {
+        const message = cause instanceof Error ? cause.message : 'no se pudo consultar.';
+        failures.push(`${item.alias}: ${message}`);
+      }
+    }
+
+    refreshingRef.current = false;
+    setRefreshing(false);
+    setError(failures.length ? failures.join('\n') : null);
+  }, []);
+
+  useFocusEffect(useCallback(() => {
+    let isFocused = true;
+    setError(null);
+    fetchProfile()
+      .then((loadedProfile) => {
+        if (!isFocused) return;
+        setProfile(loadedProfile);
+        if (refreshPackageId && lastAutoRefreshPackageId.current !== refreshPackageId) {
+          lastAutoRefreshPackageId.current = refreshPackageId;
+          const item = loadedProfile?.packages.find((candidate) => candidate.id === refreshPackageId);
+          if (item && courierServices[item.courier].lookup && loadedProfile) {
+            void refreshPackages(loadedProfile, [item]);
+          } else if (item) {
+            setError('No hay courier disponible para actualizar esta encomienda.');
+          }
+        }
+      })
+      .catch((cause: unknown) => {
+        if (isFocused) setError(cause instanceof Error ? cause.message : 'No se pudo cargar el perfil.');
+      });
+
+    return () => {
+      isFocused = false;
+    };
+  }, [fetchProfile, refreshPackageId, refreshPackages]));
 
   const deletePackage = async (packageId: string) => {
     if (!profile) return;
@@ -44,30 +102,22 @@ export function DashboardScreen() {
     { text: 'Eliminar', style: 'destructive', onPress: () => deletePackage(item.id) },
   ]);
 
-  const refreshAll = () => {
-    if (!profile || !profile.packages.length) return;
-    const supported = profile.packages.filter((item) => Boolean(courierServices[item.courier].buildInjectedJavaScript(item.trackingNumber)));
-    setRefreshQueue(supported);
-    setRefreshing(supported.length > 0);
-    if (!supported.length) setError('No hay couriers disponibles para actualizar todavía.');
-  };
-
-  const handleRefreshMessage = async (event: WebViewMessageEvent) => {
-    const current = refreshQueue[0];
-    if (!current || !profile) return;
-    const parsed = courierServices[current.courier].parseMessage(event.nativeEvent.data);
-    if (parsed && !('message' in parsed)) {
-      try {
-        await profileStorage.saveResult(profile.id, current.id, parsed);
-        const packages = profile.packages.map((item) => item.id === current.id ? { ...item, result: parsed } : item);
-        setProfile({ ...profile, packages });
-      } catch (cause) {
-        setError(cause instanceof Error ? cause.message : 'No se pudo guardar el estado del pedido.');
+  const refreshAll = async () => {
+    if (!selectedProfileId || refreshingRef.current) return;
+    setError(null);
+    try {
+      const latestProfile = await fetchProfile();
+      setProfile(latestProfile);
+      const supported = latestProfile?.packages.filter((item) => Boolean(courierServices[item.courier].lookup)) ?? [];
+      if (!latestProfile?.packages.length) return;
+      if (!supported.length) {
+        setError('No hay couriers disponibles para actualizar todavía.');
+        return;
       }
+      await refreshPackages(latestProfile, supported);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudieron actualizar las encomiendas.');
     }
-    const remaining = refreshQueue.slice(1);
-    setRefreshQueue(remaining);
-    setRefreshing(remaining.length > 0);
   };
 
   if (!profile) {
@@ -124,17 +174,6 @@ export function DashboardScreen() {
         {deliveredPackages.length > 0 && <Text style={[styles.sectionTitle, styles.deliveredHeading]}>Entregados Recientemente</Text>}
         {deliveredPackages.map(renderPackage)}
         {error && <Text style={globalStyles.error}>{error}</Text>}
-        {refreshQueue[0] && (
-          <View style={{ height: 1, opacity: 0 }}>
-            <WebView
-              source={{ uri: courierServices[refreshQueue[0].courier].trackingUrl }}
-              injectedJavaScript={courierServices[refreshQueue[0].courier].buildInjectedJavaScript(refreshQueue[0].trackingNumber)}
-              onMessage={handleRefreshMessage}
-              javaScriptEnabled
-              domStorageEnabled
-            />
-          </View>
-        )}
       </ScrollView>
     </View>
   );

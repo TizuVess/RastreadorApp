@@ -94,6 +94,22 @@ export const profileStorage = {
     return { id: data.id, name: data.name, packages: [] };
   },
 
+  async updateProfileName(profileId: string, name: string): Promise<void> {
+    const { error } = await getSupabaseClient()
+      .from('profiles')
+      .update({ name })
+      .eq('id', profileId);
+    if (error) throw error;
+  },
+
+  async deleteProfile(profileId: string): Promise<void> {
+    const { error } = await getSupabaseClient()
+      .from('profiles')
+      .delete()
+      .eq('id', profileId);
+    if (error) throw error;
+  },
+
   async savePackage(profileId: string, item: PackageDraft): Promise<SavedPackage> {
     const supabase = getSupabaseClient();
     const values = {

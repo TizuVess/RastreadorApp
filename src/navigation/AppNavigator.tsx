@@ -8,10 +8,7 @@ export function AppNavigator() {
       <Stack.Screen name="guest" />
       <Stack.Screen name="profiles" />
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="dashboard" />
-      <Stack.Screen name="new-package" />
       <Stack.Screen name="package-detail" />
-      <Stack.Screen name="user-profile" />
     </Stack>
   );
 }

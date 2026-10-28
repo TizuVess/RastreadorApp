@@ -42,13 +42,19 @@ export function NewPackageScreen() {
     }
     const savedPackage = profile.packages.find((item) => item.id === packageId);
     try {
-      await profileStorage.savePackage(profile.id, {
+      const saved = await profileStorage.savePackage(profile.id, {
         ...(savedPackage ? { id: savedPackage.id } : {}),
         courier,
         trackingNumber: cleanNumber,
         alias: alias.trim() || cleanNumber,
       });
-      router.replace({ pathname: '/(tabs)/home', params: { profileId: profile.id } });
+      router.replace({
+        pathname: '/(tabs)/home',
+        params: {
+          profileId: profile.id,
+          ...(!packageId ? { refreshPackageId: saved.id } : {}),
+        },
+      });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No se pudo guardar la encomienda.');
     }

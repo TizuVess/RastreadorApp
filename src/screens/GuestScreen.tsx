@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { globalStyles } from '@/styles/globalStyles';
@@ -12,24 +11,32 @@ export function GuestScreen() {
   const insets = useSafeAreaInsets();
   const [courierId, setCourierId] = useState<CourierId>('blue-express');
   const [trackingNumber, setTrackingNumber] = useState('');
-  const [query, setQuery] = useState<string | null>(null);
   const [result, setResult] = useState<TrackingResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const service = getCourierService(courierId);
 
-  const startTracking = () => {
-    if (!trackingNumber.trim()) { setError('Ingresa un número de seguimiento.'); return; }
-    if (!service.buildInjectedJavaScript(trackingNumber.trim())) { setError('Este courier todavía está en integración.'); return; }
-    setResult(null); setError(null); setLoading(true); setQuery(trackingNumber.trim());
-  };
+  const startTracking = async () => {
+    const cleanTrackingNumber = trackingNumber.trim();
+    if (!cleanTrackingNumber) {
+      setError('Ingresa un número de seguimiento.');
+      return;
+    }
+    if (!service.lookup) {
+      setError('Este courier todavía está en integración.');
+      return;
+    }
 
-  const onMessage = (event: WebViewMessageEvent) => {
-    const parsed = service.parseMessage(event.nativeEvent.data);
-    if (!parsed) return;
-    setLoading(false);
-    if ('message' in parsed) { setError(parsed.message); return; }
-    setResult(parsed);
+    setResult(null);
+    setError(null);
+    setLoading(true);
+    try {
+      setResult(await service.lookup(cleanTrackingNumber));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo consultar el pedido.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const statusText = result?.status ?? 'Sin consultar aún';
@@ -51,7 +58,7 @@ export function GuestScreen() {
         <Text style={globalStyles.label}>Courier</Text>
         <View style={{ gap: 8 }}>
           {Object.values(courierServices).map((option) => (
-            <Pressable key={option.id} style={[globalStyles.buttonSecondary, courierId === option.id && globalStyles.button]} onPress={() => setCourierId(option.id)}>
+            <Pressable key={option.id} style={[globalStyles.buttonSecondary, courierId === option.id && globalStyles.button]} onPress={() => { setCourierId(option.id); setResult(null); setError(null); }}>
               <Text style={courierId === option.id ? globalStyles.buttonText : globalStyles.buttonSecondaryText}>{option.name}</Text>
             </Pressable>
           ))}
@@ -65,11 +72,6 @@ export function GuestScreen() {
 
       {loading && <ActivityIndicator size="large" color="#0B63CE" />}
       {error && <Text style={globalStyles.error}>{error}</Text>}
-      {query && (
-        <View style={{ height: 360, overflow: 'hidden', borderRadius: 12 }}>
-          <WebView key={`${courierId}:${query}`} source={{ uri: service.trackingUrl }} injectedJavaScript={service.buildInjectedJavaScript(query)} onMessage={onMessage} javaScriptEnabled domStorageEnabled />
-        </View>
-      )}
       {result && (
         <View style={globalStyles.headerCard}>
           <Text style={globalStyles.eyebrow}>Estado actual</Text>

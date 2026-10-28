@@ -11,14 +11,8 @@ export type TrackingResult = {
   raw: unknown;
 };
 
-export type TrackingError = {
-  message: string;
-};
-
 export type CourierService = {
   id: CourierId;
   name: string;
-  trackingUrl: string;
-  buildInjectedJavaScript: (trackingNumber: string) => string;
-  parseMessage: (message: string) => TrackingResult | TrackingError | null;
+  lookup?: (trackingNumber: string) => Promise<TrackingResult>;
 };
