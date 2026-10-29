@@ -12,9 +12,11 @@ Aplicación móvil para consultar y guardar el seguimiento de encomiendas. Los p
 - Integración de consulta directa con la API utilizada por Blue Express.
 - Importación opcional de perfiles locales heredados guardados en el dispositivo.
 
-Blue Express es el único courier integrado para consultar estados actualmente. Chilexpress, Correos de Chile y 17TRACK aparecen como opciones, pero su integración está pendiente.
+Blue Express es el único courier integrado para consultar estados actualmente. Chilexpress, Correos de Chile, 17TRACK y Starken se pueden seleccionar y guardar, pero la consulta automática sigue pendiente. En los couriers sin integración, la app indica que la función estará disponible próximamente.
 
 > La consulta usa un endpoint del sitio de Blue Express que no está documentado públicamente y puede cambiar. Si Blue Express lo modifica, la consulta podría dejar de funcionar hasta actualizar la integración.
+
+Las APIs oficiales de Chilexpress y 17TRACK requieren suscripción o credenciales. Para los demás couriers no se ha verificado un endpoint público estable que pueda usarse directamente desde la app sin credenciales privadas.
 
 ## Requisitos
 
@@ -26,7 +28,7 @@ Blue Express es el único courier integrado para consultar estados actualmente. 
 ## Configurar Supabase
 
 1. Crea un proyecto en [Supabase](https://supabase.com/).
-2. En **SQL Editor**, ejecuta el contenido de [`supabase/migrations/20261020160000_profiles_and_packages.sql`](./supabase/migrations/20261020160000_profiles_and_packages.sql). Esto crea los perfiles, encomiendas y políticas RLS.
+2. En **SQL Editor**, ejecuta las migraciones de [`supabase/migrations`](./supabase/migrations) en orden cronológico. Esto crea los perfiles, encomiendas, políticas RLS y habilita el courier Starken en la base de datos.
 3. En **Project Settings → API**, copia la URL del proyecto y la clave publicable (anon).
 4. Crea un archivo llamado `.env` en la raíz del proyecto y agrega:
 

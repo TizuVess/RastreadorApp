@@ -93,11 +93,16 @@ export function NewPackageScreen() {
               const selected = courier === service.id;
               return (
                 <Pressable key={service.id} onPress={() => setCourier(service.id)} style={[styles.courierOption, selected && styles.courierSelected]}>
-                  <Text style={[styles.courierText, selected && styles.courierTextSelected]}>{service.name}</Text>
+                  <Text style={[styles.courierText, selected && styles.courierTextSelected]}>
+                    {service.name}{service.lookup ? '' : ' · Próximamente'}
+                  </Text>
                 </Pressable>
               );
             })}
           </ScrollView>
+          {!courierServices[courier].lookup && (
+            <Text style={styles.hint}>Puedes guardar la encomienda, pero la consulta automática aún no está disponible para este courier.</Text>
+          )}
         </View>
         <View style={styles.field}>
           <Text style={styles.label}>Nombre personalizado / Alias (Opcional)</Text>

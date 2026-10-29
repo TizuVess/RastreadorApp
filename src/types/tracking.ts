@@ -1,4 +1,4 @@
-export type CourierId = 'blue-express' | 'chilexpress' | 'correos-chile' | '17track';
+export type CourierId = 'blue-express' | 'chilexpress' | 'correos-chile' | '17track' | 'starken';
 
 export type TrackingResult = {
   courier: CourierId;

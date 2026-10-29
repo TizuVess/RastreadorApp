@@ -59,7 +59,9 @@ export function GuestScreen() {
         <View style={{ gap: 8 }}>
           {Object.values(courierServices).map((option) => (
             <Pressable key={option.id} style={[globalStyles.buttonSecondary, courierId === option.id && globalStyles.button]} onPress={() => { setCourierId(option.id); setResult(null); setError(null); }}>
-              <Text style={courierId === option.id ? globalStyles.buttonText : globalStyles.buttonSecondaryText}>{option.name}</Text>
+              <Text style={courierId === option.id ? globalStyles.buttonText : globalStyles.buttonSecondaryText}>
+                {option.name}{option.lookup ? '' : ' · Próximamente'}
+              </Text>
             </Pressable>
           ))}
         </View>

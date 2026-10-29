@@ -12,6 +12,9 @@ export const courierServices: Record<CourierId, CourierService> = {
   '17track': {
     id: '17track', name: '17TRACK',
   },
+  starken: {
+    id: 'starken', name: 'Starken',
+  },
 };
 
 export const getCourierService = (id: CourierId) => courierServices[id];
