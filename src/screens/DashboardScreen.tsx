@@ -1,10 +1,11 @@
+import { useActiveProfile } from '@/contexts/ActiveProfileContext';
+import { profileStorage, type Profile, type SavedPackage } from '@/lib/storage';
+import { courierServices } from '@/services/couriers';
+import { colors, globalStyles } from '@/styles/globalStyles';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useActiveProfile } from '@/contexts/ActiveProfileContext';
-import { colors, globalStyles } from '@/styles/globalStyles';
-import { courierServices } from '@/services/couriers';
-import { profileStorage, type Profile, type SavedPackage } from '@/lib/storage';
 
 const isDelivered = (status = '') => /entregad|recibid|complet|finaliz/i.test(status);
 
@@ -148,7 +149,7 @@ export function DashboardScreen() {
           </View>
         </Pressable>
         <View style={styles.packageActions}>
-          <Pressable onPress={() => router.push({ pathname: '/(tabs)/packages/new', params: { profileId: profile.id, packageId: item.id } })}>
+          <Pressable onPress={() => router.push({ pathname: '/packages/new', params: { profileId: profile.id, packageId: item.id } })}>
             <Text style={styles.actionText}>Editar</Text>
           </Pressable>
           <Pressable onPress={() => confirmDelete(item)}><Text style={styles.actionText}>Eliminar</Text></Pressable>
@@ -158,7 +159,7 @@ export function DashboardScreen() {
   };
 
   return (
-    <View style={globalStyles.screen}>
+    <View style={[globalStyles.screen, styles.container]}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.titleRow}>
           <View><Text style={styles.title}>Mis Encomiendas</Text><Text style={styles.greeting}>{profile.name}</Text></View>
@@ -175,12 +176,25 @@ export function DashboardScreen() {
         {deliveredPackages.map(renderPackage)}
         {error && <Text style={globalStyles.error}>{error}</Text>}
       </ScrollView>
+
+      {/* Botón Flotante (FAB) para nueva encomienda */}
+      <Pressable 
+        style={styles.fab} 
+        onPress={() => router.push({ pathname: '/packages/new', params: { profileId: profile.id } })}
+        accessibilityLabel="Crear nueva encomienda"
+      >
+        <Ionicons name="add" size={28} color="#FFFFFF" />
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 16, paddingTop: 13, paddingBottom: 20, gap: 11 },
+  container: {
+    flex: 1,
+    position: 'relative', // Necesario para que el FAB se posicione de forma absoluta respecto a esta pantalla
+  },
+  content: { paddingHorizontal: 16, paddingTop: 13, paddingBottom: 80, gap: 11 }, // paddingBottom aumentado para que el scroll no tape el FAB
   titleRow: { minHeight: 42, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { color: colors.text, fontSize: 18, fontWeight: '800' },
   greeting: { color: colors.muted, fontSize: 11, marginTop: 2 },
@@ -210,4 +224,22 @@ const styles = StyleSheet.create({
   actionText: { color: colors.primary, fontSize: 10, fontWeight: '600' },
   emptyText: { color: colors.muted, fontSize: 12, backgroundColor: '#FFFFFF', padding: 14, borderRadius: 9 },
   deliveredHeading: { marginTop: 2 },
+  // Estilos del Botón Flotante (FAB)
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6, // Sombra para Android
+    shadowColor: '#000', // Sombra para iOS
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.27,
+    shadowRadius: 4.65,
+    zIndex: 999,
+  },
 });

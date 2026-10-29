@@ -1,17 +1,13 @@
+import { useAuth } from '@/contexts/AuthContext';
+import { colors } from '@/styles/globalStyles';
 import { Redirect, Tabs } from 'expo-router';
 import { ActivityIndicator, Text, View, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuth } from '@/contexts/AuthContext';
-import { colors } from '@/styles/globalStyles';
 
 type TabIconProps = { color: ColorValue; size: number };
 
 function HomeTabIcon({ color, size }: TabIconProps) {
   return <Text style={{ color, fontSize: size, lineHeight: size + 4 }}>⌂</Text>;
-}
-
-function NewPackageTabIcon({ color, size }: TabIconProps) {
-  return <Text style={{ color, fontSize: size, lineHeight: size + 4 }}>+</Text>;
 }
 
 function ProfileTabIcon({ color, size }: TabIconProps) {
@@ -43,10 +39,6 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="home/index"
         options={{ title: 'Inicio', tabBarIcon: HomeTabIcon }}
-      />
-      <Tabs.Screen
-        name="packages/new"
-        options={{ title: 'Nueva', tabBarIcon: NewPackageTabIcon }}
       />
       <Tabs.Screen
         name="account/index"

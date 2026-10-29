@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuth } from '@/contexts/AuthContext';
 import { useActiveProfile } from '@/contexts/ActiveProfileContext';
-import { globalStyles } from '@/styles/globalStyles';
+import { useAuth } from '@/contexts/AuthContext';
 import { profileStorage, type Profile } from '@/lib/storage';
+import { globalStyles } from '@/styles/globalStyles';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export function ProfilesScreen() {
   const router = useRouter();
@@ -140,9 +141,19 @@ export function ProfilesScreen() {
   if (loading) return <View style={[globalStyles.screen, globalStyles.content]}><ActivityIndicator /></View>;
 
   return (
-    <ScrollView style={globalStyles.screen} contentContainerStyle={[globalStyles.content, { paddingBottom: 20 + insets.bottom }]}>
-      <Text style={globalStyles.title}>Perfiles</Text>
+    <ScrollView 
+      style={globalStyles.screen} 
+      contentContainerStyle={[globalStyles.content, { paddingBottom: 30 + insets.bottom, paddingTop: insets.top + 8 }]}
+    >
+      {/* Botón superior izquierdo: Cerrar sesión con flecha */}
+      <Pressable style={localStyles.signOutHeaderButton} onPress={confirmSignOut} disabled={signingOut}>
+        <Ionicons name="arrow-back" size={18} color="#666" />
+        <Text style={localStyles.signOutHeaderText}>{signingOut ? 'Cerrando...' : 'Cerrar sesión'}</Text>
+      </Pressable>
+
+      <Text style={[globalStyles.title, { marginTop: 8 }]}>Perfiles</Text>
       <Text style={globalStyles.subtitle}>Tus perfiles y encomiendas se sincronizan con tu cuenta.</Text>
+
       {legacyProfiles.length > 0 && (
         <View style={globalStyles.surface}>
           <Text style={globalStyles.label}>Perfiles guardados en este dispositivo</Text>
@@ -152,6 +163,7 @@ export function ProfilesScreen() {
           </Pressable>
         </View>
       )}
+
       {profiles.map((profile) => (
         <View key={profile.id} style={globalStyles.surface}>
           {editingProfileId === profile.id ? (
@@ -164,41 +176,86 @@ export function ProfilesScreen() {
                 autoCapitalize="words"
                 maxLength={80}
               />
-              <Pressable style={globalStyles.button} onPress={() => saveProfileName(profile.id)}>
-                <Text style={globalStyles.buttonText}>Guardar nombre</Text>
-              </Pressable>
-              <Pressable style={globalStyles.buttonSecondary} onPress={() => setEditingProfileId(null)}>
-                <Text style={globalStyles.buttonSecondaryText}>Cancelar</Text>
-              </Pressable>
+              <View style={localStyles.rowButtons}>
+                <Pressable style={[globalStyles.button, localStyles.flexButton]} onPress={() => saveProfileName(profile.id)}>
+                  <Text style={globalStyles.buttonText}>Guardar</Text>
+                </Pressable>
+                <Pressable style={[globalStyles.buttonSecondary, localStyles.flexButton]} onPress={() => setEditingProfileId(null)}>
+                  <Text style={globalStyles.buttonSecondaryText}>Cancelar</Text>
+                </Pressable>
+              </View>
             </>
           ) : (
             <>
-              <Text style={globalStyles.label}>{profile.name}</Text>
-              <Text style={globalStyles.subtitle}>{profile.packages.length} pedido(s)</Text>
-              <Pressable style={globalStyles.button} onPress={() => enterProfile(profile)}><Text style={globalStyles.buttonText}>Entrar</Text></Pressable>
-              <Pressable style={globalStyles.buttonSecondary} onPress={() => startEditingProfile(profile)}><Text style={globalStyles.buttonSecondaryText}>Editar nombre</Text></Pressable>
-              <Pressable style={globalStyles.buttonSecondary} onPress={() => confirmDeleteProfile(profile)}><Text style={globalStyles.buttonSecondaryText}>Eliminar perfil</Text></Pressable>
+              <View style={localStyles.profileHeaderRow}>
+                <View>
+                  <Text style={globalStyles.label}>{profile.name}</Text>
+                  <Text style={globalStyles.subtitle}>{profile.packages.length} pedido(s)</Text>
+                </View>
+                <View style={localStyles.profileActionsRow}>
+                  <Pressable style={localStyles.iconButton} onPress={() => startEditingProfile(profile)}>
+                    <Ionicons name="pencil-outline" size={17} color="#555" />
+                  </Pressable>
+                  <Pressable style={localStyles.iconButton} onPress={() => confirmDeleteProfile(profile)}>
+                    <Ionicons name="trash-outline" size={17} color="#D92D20" />
+                  </Pressable>
+                </View>
+              </View>
+              <Pressable style={[globalStyles.button, { marginTop: 12 }]} onPress={() => enterProfile(profile)}>
+                <Text style={globalStyles.buttonText}>Entrar</Text>
+              </Pressable>
             </>
           )}
         </View>
       ))}
+
       <View style={globalStyles.surface}>
         <Text style={globalStyles.label}>Crear perfil</Text>
         <TextInput style={globalStyles.input} value={name} onChangeText={setName} placeholder="Nombre del perfil" autoCapitalize="words" />
-        <Pressable style={globalStyles.buttonSecondary} onPress={createProfile}><Text style={globalStyles.buttonSecondaryText}>Crear perfil</Text></Pressable>
+        <Pressable style={[globalStyles.buttonSecondary, { marginTop: 8 }]} onPress={createProfile}>
+          <Text style={globalStyles.buttonSecondaryText}>Crear perfil</Text>
+        </Pressable>
       </View>
+
       {error && <Text style={globalStyles.error}>{error}</Text>}
-      <Pressable
-        style={[globalStyles.button, styles.signOutButton, signingOut && globalStyles.buttonDisabled]}
-        onPress={confirmSignOut}
-        disabled={signingOut}
-      >
-        <Text style={globalStyles.buttonText}>{signingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}</Text>
-      </Pressable>
     </ScrollView>
   );
 }
 
-const styles = {
-  signOutButton: { backgroundColor: '#D92D20' },
-};
+const localStyles = StyleSheet.create({
+  signOutHeaderButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+    marginBottom: 2,
+  },
+  signOutHeaderText: {
+    color: '#666',
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 6,
+  },
+  profileHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  profileActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  iconButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+  },
+  rowButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  flexButton: {
+    flex: 1,
+  },
+});
