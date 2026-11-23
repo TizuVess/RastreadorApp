@@ -1,0 +1,42 @@
+import { StyleSheet } from 'react-native';
+
+export const colors = {
+  background: '#F5F5F5',
+  surface: '#FFFFFF',
+  text: '#202124',
+  muted: '#798394',
+  primary: '#2864F0',
+  border: '#E5E7EB',
+  danger: '#D92D20',
+};
+
+export const globalStyles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.background },
+  content: { padding: 20, gap: 14 },
+  title: { color: colors.text, fontSize: 24, fontWeight: '800' },
+  subtitle: { color: colors.muted, fontSize: 14, lineHeight: 20 },
+  eyebrow: { color: colors.muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+  surface: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 11, padding: 14 },
+  headerCard: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16, gap: 12 },
+  statusPill: { alignSelf: 'flex-start', borderRadius: 7, borderWidth: 0, paddingHorizontal: 9, paddingVertical: 5 },
+  statusText: { fontSize: 12, fontWeight: '700' },
+  trackingCode: { color: colors.text, fontSize: 14, fontWeight: '700', backgroundColor: 'transparent', paddingHorizontal: 0, paddingVertical: 4, overflow: 'hidden' },
+  infoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  infoCard: { flexBasis: '48%', minWidth: 140, backgroundColor: '#F8F9FB', borderColor: colors.border, borderWidth: 1, borderRadius: 9, padding: 11, gap: 4 },
+  infoLabel: { color: colors.muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+  infoValue: { color: colors.text, fontSize: 14, fontWeight: '700' },
+  detailText: { color: colors.text, fontSize: 15, lineHeight: 22 },
+  detailBox: { backgroundColor: '#F8F9FB', borderRadius: 9, borderColor: colors.border, borderWidth: 1, padding: 14 },
+  button: { backgroundColor: colors.primary, borderRadius: 9, padding: 14, alignItems: 'center' },
+  buttonSecondary: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 9, padding: 14, alignItems: 'center' },
+  buttonSecondaryText: { color: '#475467', fontSize: 14, fontWeight: '600' },
+  buttonText: { color: colors.surface, fontSize: 14, fontWeight: '700' },
+  buttonDisabled: { opacity: 0.55 },
+  input: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 9, padding: 13, color: colors.text, fontSize: 14 },
+  label: { color: colors.text, fontSize: 13, fontWeight: '700' },
+  error: { color: colors.danger, fontSize: 14 },
+  jsonContainer: { backgroundColor: '#17202A', borderRadius: 12, padding: 16 },
+  jsonTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '700', marginBottom: 10 },
+  jsonScroll: { maxHeight: 220 },
+  jsonText: { color: '#D5E4F2', fontFamily: 'monospace', fontSize: 12 },
+});
