@@ -1,8 +1,15 @@
 import type { CourierId, CourierService } from '@/types/tracking';
 import { blueExpressService } from './blueExpress';
+import { pullmanCargoService } from './pullmanCargo';
+import { varmonttService } from './varmontt';
 
 export const courierServices: Record<CourierId, CourierService> = {
   'blue-express': blueExpressService,
+  'pullman-cargo': pullmanCargoService,
+  varmontt: varmonttService,
+  starken: {
+    id: 'starken', name: 'Starken',
+  },
   chilexpress: {
     id: 'chilexpress', name: 'Chilexpress',
   },
@@ -11,9 +18,6 @@ export const courierServices: Record<CourierId, CourierService> = {
   },
   '17track': {
     id: '17track', name: '17TRACK',
-  },
-  starken: {
-    id: 'starken', name: 'Starken',
   },
 };
 

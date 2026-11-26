@@ -9,14 +9,14 @@ Aplicación móvil para consultar y guardar el seguimiento de encomiendas. Los p
 - Creación, edición, eliminación y consulta de encomiendas dentro de un perfil.
 - Consulta automática del estado al guardar una encomienda y actualización desde el inicio.
 - Consulta como invitado, sin cuenta y sin persistir el resultado.
-- Integración de consulta directa con la API utilizada por Blue Express.
+- Integración de consulta directa con los endpoints públicos de **Blue Express**, **Pullman Cargo** y **Varmontt** (sin necesidad de API keys privadas).
 - Importación opcional de perfiles locales heredados guardados en el dispositivo.
 
-Blue Express es el único courier integrado para consultar estados actualmente. Chilexpress, Correos de Chile, 17TRACK y Starken se pueden seleccionar y guardar, pero la consulta automática sigue pendiente. En los couriers sin integración, la app indica que la función estará disponible próximamente.
+Blue Express, Pullman Cargo y Varmontt son los couriers integrados para consultar estados actualmente. Starken, Chilexpress, Correos de Chile y 17TRACK se pueden seleccionar y guardar, pero la consulta automática sigue pendiente. En los couriers sin integración, la app indica que la función estará disponible próximamente.
 
-> La consulta usa un endpoint del sitio de Blue Express que no está documentado públicamente y puede cambiar. Si Blue Express lo modifica, la consulta podría dejar de funcionar hasta actualizar la integración.
+> Las consultas a Blue Express, Pullman Cargo y Varmontt usan endpoints públicos de sus sitios web que no están documentados formalmente y pueden cambiar. Si alguno modifica su estructura, la integración deberá actualizarse.
 
-Las APIs oficiales de Chilexpress y 17TRACK requieren suscripción o credenciales. Para los demás couriers no se ha verificado un endpoint público estable que pueda usarse directamente desde la app sin credenciales privadas.
+Starken, Chilexpress, Correos de Chile, TVP y 17TRACK requieren credenciales/API keys comerciales o están protegidos con verificación anti-bot (reCAPTCHA, hCaptcha, Cloudflare Turnstile o cifrado), por lo que no se integran directamente sin clave.
 
 ## Requisitos
 
@@ -43,7 +43,7 @@ Las APIs oficiales de Chilexpress y 17TRACK requieren suscripción o credenciale
 
 5. Si Supabase requiere confirmar el correo, confirma la cuenta antes de iniciar sesión.
 
-La consulta como invitado a Blue Express no necesita Supabase; el acceso y la sincronización de perfiles sí.
+La consulta como invitado a Blue Express, Pullman Cargo y Varmontt no necesita Supabase; el acceso y la sincronización de perfiles sí. Para guardar encomiendas de Pullman Cargo y Varmontt en perfiles autenticados, asegúrate de haber ejecutado todas las migraciones en [`supabase/migrations`](./supabase/migrations).
 
 ## Instalar y ejecutar
 
@@ -95,4 +95,5 @@ src/
   styles/              # Estilos compartidos
   types/               # Tipos de dominio
 supabase/migrations/   # Esquema y políticas RLS
+tests/                 # Pruebas unitarias (npm test)
 ```

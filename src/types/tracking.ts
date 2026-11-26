@@ -1,4 +1,4 @@
-export type CourierId = 'blue-express' | 'chilexpress' | 'correos-chile' | '17track' | 'starken';
+export type CourierId = 'blue-express' | 'pullman-cargo' | 'varmontt' | 'chilexpress' | 'correos-chile' | '17track' | 'starken';
 
 export type TrackingEvent = {
   title: string;
@@ -27,5 +27,8 @@ export type TrackingResult = {
 export type CourierService = {
   id: CourierId;
   name: string;
+  placeholder?: string;
+  hint?: string;
+  validate?: (trackingNumber: string) => string;
   lookup?: (trackingNumber: string) => Promise<TrackingResult>;
 };

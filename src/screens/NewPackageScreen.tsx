@@ -33,6 +33,7 @@ export function NewPackageScreen() {
     }).catch((cause: unknown) => setError(cause instanceof Error ? cause.message : 'No se pudo cargar el perfil.'));
   }, [packageId, profileId]);
   const displayedError = error ?? (!profileId ? 'Inicia sesión y selecciona un perfil para guardar encomiendas.' : null);
+  const selectedService = courierServices[courier];
 
   const savePackage = async () => {
     const cleanNumber = trackingNumber.trim();
@@ -40,13 +41,22 @@ export function NewPackageScreen() {
       setError('Ingresa el código de seguimiento para continuar.');
       return;
     }
+    let validatedNumber = cleanNumber;
+    if (selectedService.validate) {
+      try {
+        validatedNumber = selectedService.validate(cleanNumber);
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : 'El código de seguimiento no es válido.');
+        return;
+      }
+    }
     const savedPackage = profile.packages.find((item) => item.id === packageId);
     try {
       const saved = await profileStorage.savePackage(profile.id, {
         ...(savedPackage ? { id: savedPackage.id } : {}),
         courier,
-        trackingNumber: cleanNumber,
-        alias: alias.trim() || cleanNumber,
+        trackingNumber: validatedNumber,
+        alias: alias.trim() || validatedNumber,
       });
       router.replace({
         pathname: '/(tabs)/home',
@@ -79,12 +89,12 @@ export function NewPackageScreen() {
           <TextInput
             autoCapitalize="characters"
             onChangeText={setTrackingNumber}
-            placeholder="Ej. CHI-994-1294-CL"
+            placeholder={selectedService.placeholder ?? 'Ej. CHI-994-1294-CL'}
             placeholderTextColor="#98A2B3"
             style={styles.input}
             value={trackingNumber}
           />
-          <Text style={styles.hint}>Ejemplo: CHI-12345678-CL</Text>
+          <Text style={styles.hint}>{selectedService.hint ?? 'Ejemplo: CHI-12345678-CL'}</Text>
         </View>
         <View style={styles.field}>
           <Text style={styles.label}>Courier / Empresa de Envío <Text style={styles.required}>*</Text></Text>

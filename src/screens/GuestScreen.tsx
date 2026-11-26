@@ -98,10 +98,11 @@ export function GuestScreen() {
             style={globalStyles.input} 
             value={trackingNumber} 
             onChangeText={setTrackingNumber} 
-            placeholder="Ej: 3716170135" 
+            placeholder={service.placeholder ?? 'Ej: 3716170135'} 
             placeholderTextColor="#98A2B3"
             autoCapitalize="characters" 
           />
+          {service.hint && <Text style={styles.hint}>{service.hint}</Text>}
         </View>
 
         <Pressable 
@@ -278,6 +279,10 @@ const styles = StyleSheet.create({
     color: '#344054',
     fontSize: 12,
     fontWeight: '600',
+  },
+  hint: {
+    color: colors.muted,
+    fontSize: 11,
   },
   couriersRow: {
     gap: 8,

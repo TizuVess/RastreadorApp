@@ -141,5 +141,7 @@ const lookup = async (trackingNumber: string): Promise<TrackingResult> => {
 export const blueExpressService: CourierService = {
   id: 'blue-express',
   name: 'Blue Express',
+  placeholder: 'Ej: 3716170135',
+  hint: 'Ejemplo: 3716170135',
   lookup,
 };
