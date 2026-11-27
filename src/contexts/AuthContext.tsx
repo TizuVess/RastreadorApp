@@ -10,6 +10,7 @@ type AuthContextValue = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -70,8 +71,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
     if (error) throw error;
   };
 
+  const resetPassword = async (email: string) => {
+    const { error } = await getSupabaseClient().auth.resetPasswordForEmail(email);
+    if (error) throw error;
+  };
+
   return (
-    <AuthContext.Provider value={{ session, loading, configurationError, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ session, loading, configurationError, signIn, signUp, signOut, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );

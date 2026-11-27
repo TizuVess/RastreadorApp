@@ -1,5 +1,17 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Linking,
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +19,7 @@ import { colors, globalStyles } from '@/styles/globalStyles';
 import { courierServices } from '@/services/couriers';
 import { profileStorage, type SavedPackage } from '@/lib/storage';
 import type { TrackingResult } from '@/types/tracking';
+import { formatTrackingShareMessage, getOfficialTrackingUrl } from '@/utils/courierUrls';
 
 export function PackageDetailScreen() {
   const router = useRouter();
@@ -18,6 +31,58 @@ export function PackageDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [showRawJson, setShowRawJson] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastAnim] = useState(() => new Animated.Value(0));
+
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    Animated.sequence([
+      Animated.timing(toastAnim, { toValue: 1, duration: 180, useNativeDriver: true }),
+      Animated.delay(1800),
+      Animated.timing(toastAnim, { toValue: 0, duration: 220, useNativeDriver: true }),
+    ]).start(() => setToastMessage(null));
+  }, [toastAnim]);
+
+  const copyTrackingCode = async () => {
+    if (!item?.trackingNumber) return;
+    try {
+      await Clipboard.setStringAsync(item.trackingNumber);
+      showToast('✓ Código copiado al portapapeles');
+    } catch {
+      showToast('No se pudo copiar el código');
+    }
+  };
+
+  const openOfficialWebsite = async () => {
+    if (!item?.trackingNumber) return;
+    const url = getOfficialTrackingUrl(item.courier, item.trackingNumber);
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('No se pudo abrir el navegador', url);
+      }
+    } catch {
+      Alert.alert('Error al abrir sitio web oficial', url);
+    }
+  };
+
+  const handleShare = () => {
+    if (!item) return;
+    const message = formatTrackingShareMessage({
+      alias: item.alias,
+      trackingNumber: item.trackingNumber,
+      courierName: service.name,
+      courierId: item.courier,
+      statusText,
+      detail: result?.detail,
+      origin: result?.origin,
+      destination: result?.destination,
+      lastUpdated: result?.lastUpdated,
+    });
+    void Share.share({ message });
+  };
 
   useEffect(() => {
     if (!profileId) return;
@@ -83,7 +148,7 @@ export function PackageDetailScreen() {
         <Text style={styles.headerTitle}>Seguimiento de Envío</Text>
         <Pressable
           accessibilityLabel="Compartir seguimiento"
-          onPress={() => Share.share({ message: `${item.alias}: ${item.trackingNumber} (${service.name}) - Estado: ${statusText}` })}
+          onPress={handleShare}
           style={styles.headerButton}
         >
           <Ionicons name="share-outline" size={20} color={colors.text} />
@@ -106,7 +171,15 @@ export function PackageDetailScreen() {
 
           <View style={styles.trackingRow}>
             <Text style={styles.trackingLabel}>Nº Seguimiento:</Text>
-            <Text style={styles.trackingCode}>{item.trackingNumber}</Text>
+            <Pressable
+              onPress={copyTrackingCode}
+              style={styles.trackingCodeBadge}
+              accessibilityLabel="Copiar número de seguimiento"
+              hitSlop={6}
+            >
+              <Text style={styles.trackingCode}>{item.trackingNumber}</Text>
+              <Ionicons name="copy-outline" size={13} color={colors.primary} />
+            </Pressable>
           </View>
 
           {/* Mensaje descriptivo del estado actual */}
@@ -130,6 +203,29 @@ export function PackageDetailScreen() {
               <Text style={styles.routeValue}>{result?.destination ?? 'Por confirmar'}</Text>
             </View>
           </View>
+        </View>
+
+        {/* Acciones Rápidas: Web Oficial y Compartir */}
+        <View style={styles.actionButtonsRow}>
+          <Pressable
+            style={styles.officialSiteButton}
+            onPress={openOfficialWebsite}
+            accessibilityLabel={`Ver en sitio web de ${service.name}`}
+          >
+            <Ionicons name="open-outline" size={15} color={colors.primary} />
+            <Text numberOfLines={1} style={styles.officialSiteButtonText}>
+              Ver en sitio de {service.name}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.shareCardButton}
+            onPress={handleShare}
+            accessibilityLabel="Compartir seguimiento"
+          >
+            <Ionicons name="share-social-outline" size={15} color="#344054" />
+            <Text style={styles.shareCardButtonText}>Compartir</Text>
+          </Pressable>
         </View>
 
         {/* 2. Hoja de ruta del pedido (La "vida" del pedido) */}
@@ -236,6 +332,14 @@ export function PackageDetailScreen() {
 
         {error && <Text style={globalStyles.error}>{error}</Text>}
       </ScrollView>
+
+      {/* Toast flotante de confirmación */}
+      {Boolean(toastMessage) && (
+        <Animated.View style={[styles.floatingToast, { opacity: toastAnim }]}>
+          <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
+          <Text style={styles.floatingToastText}>{toastMessage}</Text>
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -298,17 +402,91 @@ const styles = StyleSheet.create({
   trackingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   trackingLabel: {
     color: colors.muted,
     fontSize: 12,
     fontWeight: '500',
   },
+  trackingCodeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
   trackingCode: {
-    color: colors.text,
-    fontSize: 14,
+    color: colors.primary,
+    fontSize: 13,
     fontWeight: '700',
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
+  officialSiteButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#EFF6FF',
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  officialSiteButtonText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  shareCardButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#D0D5DD',
+  },
+  shareCardButtonText: {
+    color: '#344054',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  floatingToast: {
+    position: 'absolute',
+    bottom: 30,
+    alignSelf: 'center',
+    backgroundColor: '#1E293B',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 24,
+    shadowColor: '#000000',
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+    zIndex: 9999,
+  },
+  floatingToastText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
   detailBox: {
     backgroundColor: '#F8F9FB',
